@@ -421,14 +421,10 @@ class RuleHeap(object):
         self.__cmp = BoolCmp(1e-9)
 
     def __count_smallest(self):
-        if len(self.__items) == 0:
-            self.__smallest = None
-            return
-
         self.__smallest_count = 0
         self.__smallest = self.top()[0]
         tmp = []
-        while True:
+        while self.__items:
             tmp.append(heappop(self.__items))
             if self.__cmp(tmp[-1][0], self.__smallest) != 0:
                 break
@@ -438,7 +434,7 @@ class RuleHeap(object):
             heappush(self.__items, item)
 
     def push(self, informativity, rule):
-        if self.__smallest is None:
+        if self.__smallest_count == 0:
             self.__smallest = informativity
         if self.__cmp(self.__smallest, informativity) == 0:
             self.__smallest_count += 1
