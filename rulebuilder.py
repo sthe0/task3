@@ -19,18 +19,7 @@ class BoolCmp(object):
         return 0
 
 
-class AbstractItemType(object):
-    def cast(self, item):
-        pass
-
-    def __eq__(self, other):
-        pass
-
-    def __ne__(self, other):
-        pass
-
-
-class IntegerType(AbstractItemType):
+class IntegerType(object):
     def cast(self, item):
         return int(item)
 
@@ -41,7 +30,7 @@ class IntegerType(AbstractItemType):
         return not isinstance(other, IntegerType)
 
 
-class FloatType(AbstractItemType):
+class FloatType(object):
     def cast(self, item):
         return float(item)
 
@@ -52,7 +41,7 @@ class FloatType(AbstractItemType):
         return not isinstance(other, FloatType)
 
 
-class CategoricalType(AbstractItemType):
+class CategoricalType(object):
     def __init__(self, *categories):
         if len(categories) == 0:
             raise ValueError("No categories specified")
@@ -566,6 +555,8 @@ class RuleBuilder(object):
                         best_rule = rule2
         conjunction = new_conjunction
         for rule in conjunction:
+            if len(new_conjunction) == 1:
+                break
             new_conjunction.remove(rule)
             new_informativity = self.__criterion.compute(new_conjunction, self.__train_set, self.__class)
             error = self.__compute_error(new_conjunction, self.__train_set)
@@ -580,6 +571,8 @@ class RuleBuilder(object):
         informativity = self.__criterion.compute(conjunction, self.__test_set, self.__class)
         new_conjunction = conjunction.copy()
         for rule in conjunction:
+            if len(new_conjunction) == 1:
+                break
             new_conjunction.remove(rule)
             new_informativity = self.__criterion.compute(new_conjunction, self.__test_set, self.__class)
             error = self.__compute_error(new_conjunction, self.__test_set)
