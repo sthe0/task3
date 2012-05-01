@@ -456,7 +456,7 @@ class RuleHeap(object):
     def pop(self):
         informativity, rule = heappop(self.__items)
         self.__smallest_count -= 1
-        if self.__smallest_count == 0:
+        if self.__smallest_count == 0 and len(self.__items) > 0:
             self.__count_smallest()
         self.__set.remove(rule)
         return informativity, rule
