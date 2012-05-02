@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import contextlib
+import itertools
 from rulebuilder import *
 
 def main(argv=None):
@@ -32,21 +33,22 @@ def main(argv=None):
     data_set = DataSet(domain)
     data_set.extend_raw(line.rstrip("\n").split() for line in open("data.txt").readlines())
     rule_builder = RuleBuilder(data_set)
-    rules1S = rule_builder.build_rules(class_=1, criterion=StatisticalCriterion(), criterion_min=3, population=6)[0:5]
-    rules2S = rule_builder.build_rules(class_=2, criterion=StatisticalCriterion(), criterion_min=3, population=6)[0:5]
-    rules1E = rule_builder.build_rules(class_=1, criterion=EntropyCriterion(), criterion_min=0.2, population=6)[0:5]
-    rules2E = rule_builder.build_rules(class_=2, criterion=EntropyCriterion(), criterion_min=0.2, population=6)[0:5]
-
-    rulesS = list(merge(rules1S, rules2S))
-    rulesS.reverse()
-    rulesE = list(merge(rules1E, rules2E))
-    rulesE.reverse()
+    rules1S = rule_builder.build_rules(class_=1, criterion=StatisticalCriterion(), criterion_min=3, population=10)
+    rules2S = rule_builder.build_rules(class_=2, criterion=StatisticalCriterion(), criterion_min=3, population=10)
+    rules1E = rule_builder.build_rules(class_=1, criterion=EntropyCriterion(), criterion_min=0.2, population=10)
+    rules2E = rule_builder.build_rules(class_=2, criterion=EntropyCriterion(), criterion_min=0.2, population=10)
+    rules1S = [(1, key, value) for key, value in rules1S.items()][0:5]
+    rules2S = [(2, key, value) for key, value in rules2S.items()][0:5]
+    rules1E = [(1, key, value) for key, value in rules1E.items()][0:5]
+    rules2E = [(2, key, value) for key, value in rules2E.items()][0:5]
+    rulesS = sorted(rules1S + rules2S, key=(lambda x: x[2]))
+    rulesE = sorted(rules1E + rules2E, key=(lambda x: x[2]))
     with contextlib.closing(open("RulesS.txt", "w")) as f:
         for item in rulesS:
-            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
+            f.write("{0};{1};{2}\n".format(item[0], item[1], item[2]))
     with contextlib.closing(open("RulesE.txt", "w")) as f:
         for item in rulesE:
-            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
+            f.write("{0};{1};{2}\n".format(item[0], item[1], item[2]))
 
 #    with contextlib.closing(open("Rules1S.txt", "w")) as f:
 #        for item in rules1S:

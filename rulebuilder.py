@@ -506,7 +506,7 @@ class RuleList(object):
     def __iter__(self):
         for node in self.__list:
             for item in node.value[1:]:
-                yield item
+                yield node.value[0], item
 
     def __len__(self):
         return len(self.__rule_set)
@@ -696,7 +696,7 @@ class RuleBuilder(object):
                 new_conjunction.add(rule)
             else:
                 informativity = new_informativity
-        error = self.__compute_error(new_conjunction, self.__train_set)
+        #error = self.__compute_error(new_conjunction, self.__train_set)
         #if error >= self.__max_error:
         #    informativity = 0.0
         #    new_conjunction = None
@@ -715,40 +715,35 @@ class RuleBuilder(object):
         self.__max_error = max_error
         self.__class = class_
 
-        rule_heap = RuleHeap(population)
+        rule_list = RuleList(population)
         for rule in self.__simple_rules:
             conjunction = Conjunction(self.__train_set.get_domain(), [rule])
-            rule_heap.push(criterion.compute(conjunction, self.__train_set, class_), conjunction)
+            rule_list.insert(criterion.compute(conjunction, self.__train_set, class_), conjunction)
 
         for rank in range(2, self.__max_rank + 1):
-            rule_improved = False
-            for informativity, conjunction in rule_heap:
+            new_conjunctions = {}
+            for informativity, conjunction in rule_list:
                 if len(conjunction) == rank - 1:
                     new_conjunction = conjunction.copy()
                     for rule in self.__simple_rules:
                         if rule not in new_conjunction:
                             new_conjunction.add(rule)
-                            if new_conjunction not in rule_heap:
+                            if new_conjunction not in new_conjunctions:
                                 new_informativity = criterion.compute(new_conjunction, self.__train_set, class_)
                                 error = self.__compute_error(new_conjunction, self.__train_set)
                                 if new_informativity > criterion_min and error < max_error:
-                                    rule_improved = True
-                                    rule_heap.push(new_informativity, new_conjunction.copy())
-                            else:
-                                x = 2 #debug branch
+                                    new_conjunctions[new_conjunction.copy()] = informativity
                             new_conjunction.remove(rule)
-            if not rule_improved:
+            if new_conjunctions:
                 break
+            for conjunction, informativity in new_conjunctions.items():
+                rule_list.insert(informativity, conjunction)
 
-        rule_dict = {}
-        while rule_heap:
-            informativity, conjunction = rule_heap.pop()
+        conjunctions = {}
+        for informativity, conjunction in rule_list:
             informativity, conjunction = self.__stabilize(conjunction)
             informativity, conjunction = self.__reduce(conjunction)
             if conjunction is not None:
-                rule_dict[conjunction] = (informativity, class_)
+                conjunctions[conjunction] = informativity
 
-        result = []
-        for key, value in rule_dict.items():
-            heappush(result, (value[0], key, value[1]))
-        return result
+        return conjunctions
