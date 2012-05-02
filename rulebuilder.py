@@ -404,6 +404,117 @@ class EntropyCriterion(AbstractInformativityCriterion):
         return self.__compute_entropy(P, N) - new_entropy
 
 
+class ListNode(object):
+    def __init__(self, value, prev=None, next=None):
+        self.value = value
+        self._next = next
+        self._prev = prev
+
+
+class LinkedList(object):
+    def __init__(self):
+        self._fake_node = ListNode(None)
+        self._fake_node._next = self._fake_node
+        self._fake_node._prev = self._fake_node
+        self.__size = 0
+
+    def push_back(self, value):
+        self.insert_before(self._fake_node, value)
+
+    def push_front(self, value):
+        self.insert_after(self._fake_node, value)
+
+    def next(self, node=None):
+        if node is None:
+            node = self._fake_node
+        if node._next == self._fake_node:
+            return None
+        return node._next
+
+    def prev(self, node=None):
+        if node is None:
+            node = self._fake_node
+        if node._prev == self._fake_node:
+            return None
+        return node._prev
+
+    def back(self):
+        return self.prev()
+
+    def front(self):
+        return self.next()
+
+    def insert_after(self, node, value):
+        new_node = ListNode(value, node, node._next)
+        new_node._next._prev = new_node
+        new_node._prev._next = new_node
+        self.__size += 1
+
+    def insert_before(self, node, value):
+        new_node = ListNode(value, node._prev, node)
+        new_node._next._prev = new_node
+        new_node._prev._next = new_node
+        self.__size += 1
+
+    def remove(self, node):
+        node._next._prev = node._prev
+        node._prev._next = node._next
+        self.__size -= 1
+
+    def __iter__(self):
+        cur = self._fake_node._next
+        while cur != self._fake_node:
+            yield cur
+            cur = cur._next
+
+    def __len__(self):
+        return self.__size
+
+
+class RuleList(object):
+    def __init__(self, max_size = 10):
+        self.__list = LinkedList()
+        self.__cmp = BoolCmp(1e-9)
+        self.__max_size = max_size
+        self.__rule_set = set()
+
+    def insert(self, informativity, rule):
+        if rule in self.__rule_set:
+            return
+        self.__rule_set.add(rule)
+
+        if not self.__list or self.__cmp(self.__list.back().value[0], informativity) > 0:
+            self.__list.push_back([informativity, rule])
+        else:
+            for node in self.__list:
+                if self.__cmp(node.value[0], informativity) > 0:
+                    continue
+                if self.__cmp(node.value[0], informativity) == 0:
+                    node.value.append(rule)
+                if self.__cmp(node.value[0], informativity) < 0:
+                    self.__list.insert_before(node, [informativity, rule])
+                break
+        if len(self.__rule_set) - (len(self.__list.back().value) - 1) >= self.__max_size:
+            for item in self.__list.back().value[1:]:
+                self.__rule_set.remove(item)
+            self.__list.remove(self.__list.back())
+
+    def clear(self):
+        self.__list = LinkedList()
+        self.__rule_set = set()
+
+    def __iter__(self):
+        for node in self.__list:
+            for item in node.value[1:]:
+                yield item
+
+    def __len__(self):
+        return len(self.__rule_set)
+
+    def __contains__(self, rule):
+        return rule in self.__rule_set
+
+
 class RuleHeap(object):
     def __init__(self, max_size=10):
         self.__set = set()
@@ -469,7 +580,7 @@ class RuleHeap(object):
 
 
 class RuleBuilder(object):
-    def __init__(self, train_set, folds=5, test_fraction=0.25):
+    def __init__(self, train_set, folds=6, test_fraction=0.25):
         random.seed()
         self.__folds = folds
         self.__test_fraction = test_fraction
@@ -546,7 +657,7 @@ class RuleBuilder(object):
         for rule1 in conjunction:
             best_rule = rule1
             for rule2 in self.__simple_rules:
-                if rule2 not in conjunction:
+                if rule2 not in new_conjunction:
                     new_conjunction.remove(best_rule)
                     new_conjunction.add(rule2)
                     new_informativity = self.__criterion.compute(new_conjunction, self.__train_set, self.__class)
@@ -597,7 +708,7 @@ class RuleBuilder(object):
                     criterion=StatisticalCriterion(),
                     criterion_min=3,
                     max_error=0.4,
-                    max_rank=3):
+                    max_rank=4):
 
         self.__max_rank = max_rank
         self.__criterion = criterion
@@ -628,11 +739,16 @@ class RuleBuilder(object):
                             new_conjunction.remove(rule)
             if not rule_improved:
                 break
-        result = []
+
+        rule_dict = {}
         while rule_heap:
             informativity, conjunction = rule_heap.pop()
             informativity, conjunction = self.__stabilize(conjunction)
             informativity, conjunction = self.__reduce(conjunction)
             if conjunction is not None:
-                heappush(result, (informativity, conjunction, class_))
+                rule_dict[conjunction] = (informativity, class_)
+
+        result = []
+        for key, value in rule_dict.items():
+            heappush(result, (value[0], key, value[1]))
         return result

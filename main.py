@@ -32,10 +32,10 @@ def main(argv=None):
     data_set = DataSet(domain)
     data_set.extend_raw(line.rstrip("\n").split() for line in open("data.txt").readlines())
     rule_builder = RuleBuilder(data_set)
-    rules1S = rule_builder.build_rules(1, criterion=StatisticalCriterion(), criterion_min=2, population=6)[0:5]
-    rules2S = rule_builder.build_rules(2, criterion=StatisticalCriterion(), criterion_min=2, population=6)[0:5]
-    rules1E = rule_builder.build_rules(1, criterion=EntropyCriterion(), criterion_min=0.1, population=6)[0:5]
-    rules2E = rule_builder.build_rules(2, criterion=EntropyCriterion(), criterion_min=0.1, population=6)[0:5]
+    rules1S = rule_builder.build_rules(class_=1, criterion=StatisticalCriterion(), criterion_min=3, population=6)[0:5]
+    rules2S = rule_builder.build_rules(class_=2, criterion=StatisticalCriterion(), criterion_min=3, population=6)[0:5]
+    rules1E = rule_builder.build_rules(class_=1, criterion=EntropyCriterion(), criterion_min=0.2, population=6)[0:5]
+    rules2E = rule_builder.build_rules(class_=2, criterion=EntropyCriterion(), criterion_min=0.2, population=6)[0:5]
 
     rulesS = list(merge(rules1S, rules2S))
     rulesS.reverse()
