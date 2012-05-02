@@ -32,20 +32,34 @@ def main(argv=None):
     data_set = DataSet(domain)
     data_set.extend_raw(line.rstrip("\n").split() for line in open("data.txt").readlines())
     rule_builder = RuleBuilder(data_set)
-    rules1S = rule_builder.build_rules(1, criterion=StatisticalCriterion(), criterion_min=4, population=5)[0:5]
-    rules2S = rule_builder.build_rules(2, criterion=StatisticalCriterion(), criterion_min=4, population=5)[0:5]
-    rules1E = rule_builder.build_rules(1, criterion=EntropyCriterion(), criterion_min=0.5, population=5)[0:5]
-    rules2E = rule_builder.build_rules(2, criterion=EntropyCriterion(), criterion_min=0.5, population=5)[0:5]
-    rulesS = merge(rules1S, rules2S)
+    rules1S = rule_builder.build_rules(1, criterion=StatisticalCriterion(), criterion_min=2, population=6)[0:5]
+    rules2S = rule_builder.build_rules(2, criterion=StatisticalCriterion(), criterion_min=2, population=6)[0:5]
+    rules1E = rule_builder.build_rules(1, criterion=EntropyCriterion(), criterion_min=0.1, population=6)[0:5]
+    rules2E = rule_builder.build_rules(2, criterion=EntropyCriterion(), criterion_min=0.1, population=6)[0:5]
+
+    rulesS = list(merge(rules1S, rules2S))
     rulesS.reverse()
-    rulesE = merge(rules1E, rules2E)
+    rulesE = list(merge(rules1E, rules2E))
     rulesE.reverse()
     with contextlib.closing(open("RulesS.txt", "w")) as f:
         for item in rulesS:
-            f.write(item[2] + ";" + str(item[1]) + "\n")
+            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
     with contextlib.closing(open("RulesE.txt", "w")) as f:
         for item in rulesE:
-            f.write(item[2] + ";" + str(item[1]) + "\n")
+            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
+
+#    with contextlib.closing(open("Rules1S.txt", "w")) as f:
+#        for item in rules1S:
+#            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
+#    with contextlib.closing(open("Rules2S.txt", "w")) as f:
+#        for item in rules2S:
+#            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
+#    with contextlib.closing(open("Rules1E.txt", "w")) as f:
+#        for item in rules1E:
+#            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
+#    with contextlib.closing(open("Rules2E.txt", "w")) as f:
+#        for item in rules2E:
+#            f.write("{0};{1};{2}\n".format(item[2], item[1], item[0]))
 
     return 0
 

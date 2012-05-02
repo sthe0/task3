@@ -197,7 +197,7 @@ class EquivalenceRule(AbstractRule):
         return 1
 
     def __str__(self):
-        return "{0}:{1}:{{2}}".format(self.get_type(), self.__index + 1, self.__value)
+        return "{0}:{1}:{{{2}}}".format(self.get_type(), self.__index + 1, self.__value)
 
 
 class SetRule(AbstractRule):
@@ -220,7 +220,7 @@ class SetRule(AbstractRule):
         return 2
 
     def __str__(self):
-        return "{0}:{1}:{{2}}".format(self.get_type(), self.__index + 1, ",".join(self.__set))
+        return "{0}:{1}:{{{2}}}".format(self.get_type(), self.__index + 1, ",".join(self.__set))
 
 
 class LERule(AbstractRule):
@@ -241,7 +241,7 @@ class LERule(AbstractRule):
         return 3
 
     def __str__(self):
-        return "{0}:{1}:{{2}}".format(self.get_type(), self.__index + 1, self.__threshold)
+        return "{0}:{1}:{{{2}}}".format(self.get_type(), self.__index + 1, self.__threshold)
 
 
 class GERule(AbstractRule):
@@ -262,7 +262,7 @@ class GERule(AbstractRule):
         return 4
 
     def __str__(self):
-        return "{0}:{1}:{{2}}".format(self.get_type(), self.__index + 1, self.__threshold)
+        return "{0}:{1}:{{{2}}}".format(self.get_type(), self.__index + 1, self.__threshold)
 
 
 class RangeRule(AbstractRule):
@@ -284,7 +284,7 @@ class RangeRule(AbstractRule):
         return 5
 
     def __str__(self):
-        return "{0}:{1}:{{2},{3}}".format(self.get_type(), self.__index + 1, self.__left, self.__right)
+        return "{0}:{1}:{{{2},{3}}}".format(self.get_type(), self.__index + 1, self.__left, self.__right)
 
 
 class Conjunction(AbstractRule):
@@ -324,9 +324,13 @@ class Conjunction(AbstractRule):
         return reduce(operator.xor, map(id, self.__rules))
 
     def __eq__(self, other):
+        if not isinstance(other, Conjunction):
+            return False
         return self.__rules.issubset(other.__rules) and self.__rules.issuperset(other.__rules)
 
     def __ne__(self, other):
+        if not isinstance(other, Conjunction):
+            return True
         return not self.__rules.issubset(other.__rules) or not self.__rules.issuperset(other.__rules)
 
     def __len__(self):
@@ -337,7 +341,7 @@ class Conjunction(AbstractRule):
         return 6
 
     def __str__(self):
-        return ";".join(self.__rules)
+        return ";".join(map(str, self.__rules))
 
 
 class BinomialCoefficientLogarithmComputer(object):
@@ -390,13 +394,13 @@ class EntropyCriterion(AbstractInformativityCriterion):
     def __compute_entropy(self, P, N):
         if P == 0 or N == 0:
             return 0
-        p1 = P / (P + N)
-        p2 = N / (P + N)
+        p1 = 1.0 * P / (P + N)
+        p2 = 1.0 * N / (P + N)
         return -p1 * math.log(p1, 2) - p2 * math.log(p2, 2)
 
     def _compute_customized(self, N, P, n, p):
-        new_entropy = (p + n) / (P + N) * self.__compute_entropy(p, n) + \
-                      (P + N - p - n) / (P + N) * self.__compute_entropy(P - p, N - n)
+        new_entropy = 1.0 * (p + n) / (P + N) * self.__compute_entropy(p, n) + \
+                      1.0 * (P + N - p - n) / (P + N) * self.__compute_entropy(P - p, N - n)
         return self.__compute_entropy(P, N) - new_entropy
 
 
@@ -465,7 +469,7 @@ class RuleHeap(object):
 
 
 class RuleBuilder(object):
-    def __init__(self, train_set, folds=3, test_fraction=0.25):
+    def __init__(self, train_set, folds=5, test_fraction=0.25):
         random.seed()
         self.__folds = folds
         self.__test_fraction = test_fraction
@@ -554,6 +558,7 @@ class RuleBuilder(object):
                         informativity = new_informativity
                         best_rule = rule2
         conjunction = new_conjunction
+        new_conjunction = conjunction.copy()
         for rule in conjunction:
             if len(new_conjunction) == 1:
                 break
@@ -581,16 +586,17 @@ class RuleBuilder(object):
             else:
                 informativity = new_informativity
         error = self.__compute_error(new_conjunction, self.__train_set)
-        if error >= self.__max_error:
-            new_conjunction = None
+        #if error >= self.__max_error:
+        #    informativity = 0.0
+        #    new_conjunction = None
         return informativity, new_conjunction
 
     def build_rules(self,
                     class_,
                     population=10,
                     criterion=StatisticalCriterion(),
-                    criterion_min=6,
-                    max_error=0.1,
+                    criterion_min=3,
+                    max_error=0.4,
                     max_rank=3):
 
         self.__max_rank = max_rank
@@ -625,7 +631,8 @@ class RuleBuilder(object):
         result = []
         while rule_heap:
             informativity, conjunction = rule_heap.pop()
-            self.__stabilize(conjunction)
-            informativity = self.__reduce(conjunction)
-            heappush(result, (informativity, conjunction, class_))
+            informativity, conjunction = self.__stabilize(conjunction)
+            informativity, conjunction = self.__reduce(conjunction)
+            if conjunction is not None:
+                heappush(result, (informativity, conjunction, class_))
         return result
