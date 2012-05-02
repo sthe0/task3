@@ -3,7 +3,7 @@
 import operator
 import math
 import random
-from heapq import *
+from linkedlist import LinkedList
 from copy import copy
 
 
@@ -404,73 +404,6 @@ class EntropyCriterion(AbstractInformativityCriterion):
         return self.__compute_entropy(P, N) - new_entropy
 
 
-class ListNode(object):
-    def __init__(self, value, prev=None, next=None):
-        self.value = value
-        self._next = next
-        self._prev = prev
-
-
-class LinkedList(object):
-    def __init__(self):
-        self._fake_node = ListNode(None)
-        self._fake_node._next = self._fake_node
-        self._fake_node._prev = self._fake_node
-        self.__size = 0
-
-    def push_back(self, value):
-        self.insert_before(self._fake_node, value)
-
-    def push_front(self, value):
-        self.insert_after(self._fake_node, value)
-
-    def next(self, node=None):
-        if node is None:
-            node = self._fake_node
-        if node._next == self._fake_node:
-            return None
-        return node._next
-
-    def prev(self, node=None):
-        if node is None:
-            node = self._fake_node
-        if node._prev == self._fake_node:
-            return None
-        return node._prev
-
-    def back(self):
-        return self.prev()
-
-    def front(self):
-        return self.next()
-
-    def insert_after(self, node, value):
-        new_node = ListNode(value, node, node._next)
-        new_node._next._prev = new_node
-        new_node._prev._next = new_node
-        self.__size += 1
-
-    def insert_before(self, node, value):
-        new_node = ListNode(value, node._prev, node)
-        new_node._next._prev = new_node
-        new_node._prev._next = new_node
-        self.__size += 1
-
-    def remove(self, node):
-        node._next._prev = node._prev
-        node._prev._next = node._next
-        self.__size -= 1
-
-    def __iter__(self):
-        cur = self._fake_node._next
-        while cur != self._fake_node:
-            yield cur
-            cur = cur._next
-
-    def __len__(self):
-        return self.__size
-
-
 class RuleList(object):
     def __init__(self, max_size = 10):
         self.__list = LinkedList()
@@ -513,70 +446,6 @@ class RuleList(object):
 
     def __contains__(self, rule):
         return rule in self.__rule_set
-
-
-class RuleHeap(object):
-    def __init__(self, max_size=10):
-        self.__set = set()
-        self.__items = []
-        self.__smallest = None
-        self.__smallest_count = 0
-        self.__max_size = max(max_size, 1)
-        self.__cmp = BoolCmp(1e-9)
-
-    def __count_smallest(self):
-        self.__smallest_count = 0
-        self.__smallest = self.top()[0]
-        tmp = []
-        while self.__items:
-            tmp.append(heappop(self.__items))
-            if self.__cmp(tmp[-1][0], self.__smallest) != 0:
-                break
-            self.__smallest_count += 1
-
-        for item in tmp:
-            heappush(self.__items, item)
-
-    def push(self, informativity, rule):
-        if self.__smallest_count == 0:
-            self.__smallest = informativity
-        if self.__cmp(self.__smallest, informativity) == 0:
-            self.__smallest_count += 1
-        if self.__cmp(self.__smallest, informativity) > 0:
-            self.__smallest = informativity
-            self.__smallest_count = 1
-
-        if rule in self.__set:
-            return
-        heappush(self.__items, (informativity, rule))
-        self.__set.add(rule)
-
-        if len(self.__items) - self.__smallest_count >= self.__max_size:
-            while self.__cmp(self.top()[0], self.__smallest) == 0:
-                informativity, rule = heappop(self.__items)
-                self.__set.remove(rule)
-            self.__count_smallest()
-
-    def pop(self):
-        informativity, rule = heappop(self.__items)
-        self.__smallest_count -= 1
-        if self.__smallest_count == 0 and len(self.__items) > 0:
-            self.__count_smallest()
-        self.__set.remove(rule)
-        return informativity, rule
-
-    def top(self):
-        return self.__items[0]
-
-    def __len__(self):
-        return len(self.__items)
-
-    def __iter__(self):
-        for item in copy(self.__items):
-            yield item
-
-    def __contains__(self, rule):
-        return rule in self.__set
 
 
 class RuleBuilder(object):

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import sys
 import contextlib
-import itertools
 from rulebuilder import *
 
 def main(argv=None):
